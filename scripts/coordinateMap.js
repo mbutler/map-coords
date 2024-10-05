@@ -35,7 +35,7 @@ class coord {
             let colName = this.labelGen(this.xValue, c);
             for (let r = 0; r < rows; r++) {
                 let rowName = this.labelGen(this.yValue, r);
-                let label = `${colName}, ${rowName}`;
+                let label = `(${colName}, ${rowName})`;
                 let name = new PIXI.Text(label, tinyStyle);
                 let pos = canvas.grid.grid.getPixelsFromGridPosition(r + this.row0, c + this.col0);
                 if (this.isHexGrid) {
@@ -94,15 +94,20 @@ class coord {
         let name = new PIXI.Text(`${colName}, ${rowName}`, this.style);
         name.anchor.set(0.2);
         name.position.set(pos.x, pos.y);
-        let label = canvas.interface.addChild(name);
+        let label = canvas.interface.addChild(name); 
         setTimeout(() => { label.destroy(); }, this.timeOut);
+        return `(${colName}, ${rowName})`
     }
 
     addListener() {
         let modifierKey = game.settings.get("map-coords", "modifierKey");
         canvas.stage.on("click", (event) => {
             if (!game.keyboard.isModifierActive(modifierKey)) return;
-            this.mouseCoords(event);
+            const messageContent = this.mouseCoords(event);
+            ChatMessage.create({
+                content: messageContent,
+                speaker: { alias: "Map Coordinates" }
+            });            
         });
     }
 
@@ -163,7 +168,7 @@ class coord {
                 let colName = this.labelGen(this.xValue, col);
 
                 // Compile token information
-                let tokenInfo = `${token.document.name}: ${colName}, ${rowName}`;
+                let tokenInfo = `${token.document.name}: (${colName}, ${rowName})`;
                 tokenCoordinates.push(tokenInfo);
             }
 
@@ -179,6 +184,7 @@ class coord {
             console.error("Error in logTokenCoordinates:", error);
         }
     }
+    
 
     constructor() {
         try {
@@ -217,6 +223,40 @@ class coord {
         }
     }
 }
+
+function logTokenCoordinate(token, action) {
+    try {
+        let map = window.MapCoordinates;
+        if (!map) return;
+
+        // Get token's center position
+        let x = token.x + token.w / 2;
+        let y = token.y + token.h / 2;
+
+        // Convert pixel position to grid coordinates
+        let [row, col] = canvas.grid.grid.getGridPositionFromPixels(x, y);
+
+        // Adjust for grid origin
+        row -= map.row0;
+        col -= map.col0;
+
+        // Generate coordinate labels
+        let rowName = map.labelGen(map.yValue, row);
+        let colName = map.labelGen(map.xValue, col);
+
+        // Create the message content
+        let messageContent = `${token.document.name} - ${action} Position: (${colName}, ${rowName})`;
+
+        // Send the message to chat
+        ChatMessage.create({
+            content: messageContent,
+            speaker: { alias: "Map Coordinates" }
+        });
+    } catch (error) {
+        console.error("Error in logTokenCoordinate:", error);
+    }
+}
+
 
 function getSceneControlButtons(buttons) {
     let tokenButton = buttons.find(b => b.name == "token");
@@ -277,5 +317,91 @@ Hooks.on('canvasReady', () => {
         console.error("Error creating MapCoordinates instance on canvasReady:", error);
     }
 });
+
+// Combat Hooks
+Hooks.on('combatStart', (combat) => {
+    if (!window.MapCoordinates) {
+        if (!canvas.ready) return;
+        window.MapCoordinates = new coord();
+    }
+
+    // Get the first combatant in the initiative order
+    let combatant = combat.combatant;
+    if (!combatant || !combatant.token) return;
+
+    // Get the token object
+    let token = combatant.token.object;
+    if (!token) return;
+
+    // Log the starting coordinates
+    logTokenCoordinate(token, "Starting");
+});
+
+// Variable to keep track of the last combatant's ID
+let lastCombatantId = null;
+
+Hooks.on('combatStart', (combat) => {
+    if (!window.MapCoordinates) {
+        if (!canvas.ready) return;
+        window.MapCoordinates = new coord();
+    }
+
+    // Get the first combatant in the initiative order
+    let combatant = combat.combatant;
+    if (!combatant || !combatant.token) return;
+
+    // Get the token object
+    let token = combatant.token.object;
+    if (!token) return;
+
+    // Log the starting coordinates
+    logTokenCoordinate(token, "Starting");
+
+    // Set the lastCombatantId to the first combatant's ID
+    lastCombatantId = combatant.id;
+});
+
+Hooks.on('updateCombat', (combat, updateData, options, userId) => {
+    if (!window.MapCoordinates) {
+        if (!canvas.ready) return;
+        window.MapCoordinates = new coord();
+    }
+
+    // Check if the turn has changed
+    if (!("turn" in updateData) && !("round" in updateData)) return;
+
+    // Get the previous combatant using the stored lastCombatantId
+    if (lastCombatantId) {
+        let previousCombatant = combat.combatants.get(lastCombatantId);
+        if (previousCombatant && previousCombatant.token) {
+            let previousToken = previousCombatant.token.object;
+            if (previousToken) {
+                // Log the ending coordinates
+                logTokenCoordinate(previousToken, "Ending");
+            }
+        }
+    }
+
+    // Get the current combatant (whose turn is starting)
+    let currentCombatant = combat.combatant;
+    if (currentCombatant && currentCombatant.token) {
+        let currentToken = currentCombatant.token.object;
+        if (currentToken) {
+            // Log the starting coordinates
+            logTokenCoordinate(currentToken, "Starting");
+        }
+    }
+
+    // Update lastCombatantId
+    lastCombatantId = combat.combatant?.id;
+});
+
+Hooks.on('combatEnd', (combat) => {
+    // Reset lastCombatantId when combat ends
+    lastCombatantId = null;
+});
+
+
+
 
 Hooks.on('getSceneControlButtons', getSceneControlButtons);
