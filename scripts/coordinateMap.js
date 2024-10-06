@@ -392,27 +392,6 @@ Hooks.on('combatStart', (combat) => {
 // Variable to keep track of the last combatant's ID
 let lastCombatantId = null;
 
-Hooks.on('combatStart', (combat) => {
-    if (!window.MapCoordinates) {
-        if (!canvas.ready) return;
-        window.MapCoordinates = new coord();
-    }
-
-    // Get the first combatant in the initiative order
-    let combatant = combat.combatant;
-    if (!combatant || !combatant.token) return;
-
-    // Get the token object
-    let token = combatant.token.object;
-    if (!token) return;
-
-    // Log the starting coordinates
-    logTokenCoordinate(token, "Starting");
-
-    // Set the lastCombatantId to the first combatant's ID
-    lastCombatantId = combatant.id;
-});
-
 Hooks.on('updateCombat', (combat, updateData, options, userId) => {
     if (!window.MapCoordinates) {
         if (!canvas.ready) return;
