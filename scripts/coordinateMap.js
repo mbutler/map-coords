@@ -173,7 +173,7 @@ class coord {
             }
 
             // Create the message content
-            let messageContent = `<b>Token Starting Coordinates:</b><br>${tokenCoordinates.join('<br>')}`;
+            let messageContent = `Token Starting Coordinates: ${tokenCoordinates.join(', ')}`;
 
             // Send the message to chat
             ChatMessage.create({
@@ -304,6 +304,25 @@ function getSceneControlButtons(buttons) {
     }
 }
 
+function flattenObject(ob) {
+    const toReturn = {};
+    for (let i in ob) {
+        if (!ob.hasOwnProperty(i)) continue;
+
+        if (typeof ob[i] === 'object' && ob[i] !== null) {
+            const flatObject = flattenObject(ob[i]);
+            for (let x in flatObject) {
+                if (!flatObject.hasOwnProperty(x)) continue;
+                toReturn[i + '.' + x] = flatObject[x];
+            }
+        } else {
+            toReturn[i] = ob[i];
+        }
+    }
+    return toReturn;
+}
+
+
 
 
 Hooks.on('canvasReady', () => {
@@ -317,6 +336,39 @@ Hooks.on('canvasReady', () => {
         console.error("Error creating MapCoordinates instance on canvasReady:", error);
     }
 });
+
+Hooks.on('updateActor', (actor, updateData, options, userId) => {
+    console.log("updating actor!", actor)
+
+    // Get the actor's name
+    const actorName = actor.name;
+
+    // Get the user who made the change
+    const user = game.users.get(userId);
+
+    // Prepare a message detailing the updates
+    const updatedFields = Object.keys(flattenObject(updateData));
+    const updatedFieldsList = updatedFields.map(field => `${field}: ${getProperty(updateData, field)}`).join(', ');
+
+    const messageContent = `
+    Actor Updated: ${actorName}, 
+    Updated by: ${user.name}, 
+    Updated Fields: ${updatedFieldsList}
+    `;
+
+
+    // Send the message to the chat (you can adjust the visibility as needed)
+    ChatMessage.create({
+        content: messageContent,
+        speaker: { alias: "Actor Update" },
+        // whisper: [game.user.id] // Send as a whisper to yourself; remove this line to make it public
+    });
+
+    // Optionally, log to the console
+    console.log(`Actor Updated: ${actorName}`);
+    console.log('Updated Data:', updateData);
+});
+
 
 // Combat Hooks
 Hooks.on('combatStart', (combat) => {
