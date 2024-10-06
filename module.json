@@ -2,7 +2,7 @@
     "name": "map-coords",
     "title": "Map Coordinates",
     "description": "",
-    "version": "0.1.03",
+    "version": "0.1.04",
     "library": "false",
     "manifestPlusVersion": "1.0.0",
     "minimumCoreVersion": "11.315",
@@ -38,6 +38,6 @@
         }
     ],
     "url": "https://github.com/mbutler/map-coords",
-    "manifest": "https://github.com/mbutler/map-coords/releases/download/v0.1.03/module.json",
-    "download": "https://github.com/mbutler/map-coords/releases/download/v0.1.03/map-coords.zip"
+    "manifest": "https://github.com/mbutler/map-coords/releases/download/v0.1.04/module.json",
+    "download": "https://github.com/mbutler/map-coords/releases/download/v0.1.04/map-coords.zip"
 }
