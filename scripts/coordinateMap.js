@@ -358,6 +358,7 @@ Hooks.on('updateActor', (actor, updateData, options, userId) => {
 
 
     // Send the message to the chat (you can adjust the visibility as needed)
+    /*
     ChatMessage.create({
         content: messageContent,
         speaker: { alias: "Actor Update" },
@@ -367,6 +368,7 @@ Hooks.on('updateActor', (actor, updateData, options, userId) => {
     // Optionally, log to the console
     console.log(`Actor Updated: ${actorName}`);
     console.log('Updated Data:', updateData);
+    */
 });
 
 
